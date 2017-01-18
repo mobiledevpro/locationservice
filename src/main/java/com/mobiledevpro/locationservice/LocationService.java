@@ -39,8 +39,7 @@ public class LocationService extends Service {
 
     private static final int HANDLE_MSG_ON_GAPI_CONNECTION_FAILED = 1;
     private static final int HANDLE_MSG_ON_GET_LOCATION_STATE = 2;
-    private static final int HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION = 3;
-    private static final int HANDLE_MSG_ON_LOCATION_UPDATED = 4;
+    private static final int HANDLE_MSG_ON_LOCATION_UPDATED = 3;
 
     private final RemoteCallbackList<ILocationServiceCallbacks> mCallbacks = new RemoteCallbackList<>();
     private final ILocationService.Stub mBinder = new ILocationService.Stub() {
@@ -105,27 +104,6 @@ public class LocationService extends Service {
                             );
                         } catch (RemoteException e) {
                             Log.e(Constants.LOG_TAG_ERROR, "Handler.handleMessage: HANDLE_MSG_ON_GET_LOCATION_STATE EXCEPTION - " + e.getLocalizedMessage(), e);
-                        }
-                    }
-                    mCallbacks.finishBroadcast();
-                    break;
-                //when last location get
-                case HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION:
-                    if (!(msg.obj instanceof Location)) return;
-
-                    location = (Location) msg.obj;
-                    N = mCallbacks.beginBroadcast();
-                    //send callbacks
-                    for (int i = 0; i < N; i++) {
-                        try {
-                            mCallbacks.getBroadcastItem(i).onGetLastLocation(
-                                    location.getLatitude(),
-                                    location.getLongitude(),
-                                    location.getAltitude(),
-                                    location.getAccuracy()
-                            );
-                        } catch (RemoteException e) {
-                            Log.e(Constants.LOG_TAG_ERROR, "Handler.handleMessage: HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION EXCEPTION - " + e.getLocalizedMessage(), e);
                         }
                     }
                     mCallbacks.finishBroadcast();
@@ -297,7 +275,7 @@ public class LocationService extends Service {
         Log.d(Constants.LOG_TAG_DEBUG, "LocationListener.setLastKnownLocation(): lat - " + location.getLatitude() + ", lon - " + location.getLongitude());
         Message msg = new Message();
         msg.obj = location;
-        msg.what = HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION;
+        msg.what = HANDLE_MSG_ON_LOCATION_UPDATED;
         mHandler.sendMessage(msg);
     }
 

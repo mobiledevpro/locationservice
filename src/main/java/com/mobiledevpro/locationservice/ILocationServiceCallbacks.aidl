@@ -19,13 +19,6 @@ interface ILocationServiceCallbacks {
         boolean isGpsLocationOn
     );
 
-    void onGetLastLocation(
-           double latitude,
-           double longitude,
-           double altitude,
-           float accuracy
-        );
-
     void onLocationUpdated(
            double latitude,
            double longitude,
