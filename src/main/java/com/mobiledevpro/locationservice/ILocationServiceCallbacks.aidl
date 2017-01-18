@@ -11,8 +11,7 @@ interface ILocationServiceCallbacks {
 
     void onGoogleApiConnectionFailed(
         int errCode,
-        String errMessage,
-        boolean hasResolution
+        String errMessage
     );
 
     void onGetLocationSettingsState(

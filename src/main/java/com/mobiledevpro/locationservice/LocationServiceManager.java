@@ -1,6 +1,9 @@
 package com.mobiledevpro.locationservice;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +16,8 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+
+import com.google.android.gms.common.GoogleApiAvailability;
 
 /**
  * Manager for location service
@@ -79,6 +84,36 @@ public class LocationServiceManager {
         }
     }
 
+    /**
+     * Create Google Play Services error dialog
+     *
+     * @param activity     Activity
+     * @param apiErrorCode Error code form onConnectionFailed() method
+     * @return Dialog
+     */
+    public static Dialog getGoogleApiErrorDialog(final Activity activity, int apiErrorCode, int requestCode) {
+        return GoogleApiAvailability.getInstance().getErrorDialog(
+                activity,
+                apiErrorCode,
+                requestCode
+        );
+    }
+
+    /**
+     * Get Google Play Service resolution pending intent
+     *
+     * @param context     Context
+     * @param errCode     Error code
+     * @param requestCode Request code
+     * @return Pending intent
+     */
+    public static PendingIntent getGoogleApiErrorResolutionPendingIntent(Context context, int errCode, int requestCode) {
+        return GoogleApiAvailability.getInstance().getErrorResolutionPendingIntent(
+                context,
+                errCode,
+                requestCode
+        );
+    }
 
     /**
      * Create service connection
@@ -146,7 +181,7 @@ public class LocationServiceManager {
         public abstract void isNotLocationPermissionGranted();
 
         @Override
-        public abstract void onGoogleApiConnectionFailed(int errCode, String errMessage, boolean hasResolution);
+        public abstract void onGoogleApiConnectionFailed(int errCode, String errMessage);
 
         @Override
         public abstract void onLocationUpdated(

@@ -16,6 +16,7 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.internal.zzh;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -66,12 +67,31 @@ public class LocationService extends Service {
             int N;
 
             switch (msg.what) {
+                //when google api connection failed
                 case HANDLE_MSG_ON_GAPI_CONNECTION_FAILED:
+                    if (!(msg.obj instanceof GoogleApiError)) return;
+                    GoogleApiError error = (GoogleApiError) msg.obj;
+                    N = mCallbacks.beginBroadcast();
+                    //send callbacks
+                    for (int i = 0; i < N; i++) {
+                        try {
+                            mCallbacks.getBroadcastItem(i).onGoogleApiConnectionFailed(
+                                    error.getCode(),
+                                    error.getMessage()
+                            );
+                        } catch (RemoteException e) {
+                            Log.e(Constants.LOG_TAG_ERROR, "Handler.handleMessage: HANDLE_MSG_ON_GAPI_CONNECTION_FAILED EXCEPTION - " + e.getLocalizedMessage(), e);
+                        }
+                    }
+                    mCallbacks.finishBroadcast();
                     break;
+                //when location state get
                 case HANDLE_MSG_ON_GET_LOCATION_STATE:
                     break;
+                //when last location get
                 case HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION:
                     break;
+                //when location updated
                 case HANDLE_MSG_ON_LOCATION_UPDATED:
                     if (!(msg.obj instanceof Location)) return;
 
@@ -87,7 +107,7 @@ public class LocationService extends Service {
                                     location.getAccuracy()
                             );
                         } catch (RemoteException e) {
-                            Log.e(Constants.LOG_TAG_ERROR, "LocationService.onCreate: EXCEPTION - " + e.getLocalizedMessage(), e);
+                            Log.e(Constants.LOG_TAG_ERROR, "Handler.handleMessage: HANDLE_MSG_ON_LOCATION_UPDATED EXCEPTION - " + e.getLocalizedMessage(), e);
                         }
                     }
                     mCallbacks.finishBroadcast();
@@ -158,7 +178,7 @@ public class LocationService extends Service {
      *
      * @param context Context
      */
-    private void connectToGoogleApi(Context context) {
+    private void connectToGoogleApi(final Context context) {
         if (context == null) return;
         mGoogleApiClient = new GoogleApiClient.Builder(context)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
@@ -175,7 +195,7 @@ public class LocationService extends Service {
                 .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
                     @Override
                     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-                        onGapiFailedConnection(connectionResult);
+                        onGapiFailedConnection(context, connectionResult);
                     }
                 })
                 .addApi(LocationServices.API)
@@ -189,15 +209,30 @@ public class LocationService extends Service {
      * Disconnect from Google API client
      */
     private void disconnectFromGoogleApi() {
-        stopLocationUpdate();
         if (mGoogleApiClient != null) {
-            mGoogleApiClient.disconnect();
+            if (mGoogleApiClient.isConnected()) {
+                stopLocationUpdate();
+                mGoogleApiClient.disconnect();
+            }
             mGoogleApiClient = null;
         }
     }
 
-    private void onGapiFailedConnection(ConnectionResult connectionResult) {
-        // TODO: 18.01.17 send err code to client
+    private void onGapiFailedConnection(Context context, ConnectionResult connectionResult) {
+        if (connectionResult == null) return;
+        //get detailed error message
+        String errMessage = zzh.zzi(context, connectionResult.getErrorCode());
+
+        GoogleApiError error = new GoogleApiError(
+                connectionResult.getErrorCode(),
+                errMessage
+        );
+
+        //Send error to client
+        Message msg = new Message();
+        msg.obj = error;
+        msg.what = HANDLE_MSG_ON_GAPI_CONNECTION_FAILED;
+        mHandler.sendMessage(msg);
     }
 
     /**
