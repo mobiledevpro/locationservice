@@ -16,10 +16,14 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.internal.zzh;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStates;
 
 
 /**
@@ -88,6 +92,22 @@ public class LocationService extends Service {
                     break;
                 //when location state get
                 case HANDLE_MSG_ON_GET_LOCATION_STATE:
+                    if (!(msg.obj instanceof LocationSettings)) return;
+
+                    LocationSettings settings = (LocationSettings) msg.obj;
+                    N = mCallbacks.beginBroadcast();
+                    //send callbacks
+                    for (int i = 0; i < N; i++) {
+                        try {
+                            mCallbacks.getBroadcastItem(i).onGetLocationSettingsState(
+                                    settings.isNetworkLocationOn(),
+                                    settings.isGpsOn()
+                            );
+                        } catch (RemoteException e) {
+                            Log.e(Constants.LOG_TAG_ERROR, "Handler.handleMessage: HANDLE_MSG_ON_GET_LOCATION_STATE EXCEPTION - " + e.getLocalizedMessage(), e);
+                        }
+                    }
+                    mCallbacks.finishBroadcast();
                     break;
                 //when last location get
                 case HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION:
@@ -203,8 +223,8 @@ public class LocationService extends Service {
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected(@Nullable Bundle bundle) {
-                        setLastKnownLocation();
-                        startLocationUpdate();
+                        //check location state and here will be started location update
+                        checkLocationSettingsState();
                     }
 
                     @Override
@@ -221,7 +241,6 @@ public class LocationService extends Service {
                 .addApi(LocationServices.API)
                 .build();
 
-        Log.d(Constants.LOG_TAG_DEBUG, "LocationService.connectToGoogleApi(): api client - " + (mGoogleApiClient != null));
         mGoogleApiClient.connect();
     }
 
@@ -264,7 +283,7 @@ public class LocationService extends Service {
     /**
      * Return to client last location
      */
-    private void setLastKnownLocation() {
+    private void checkLastKnownLocation() {
         if (mGoogleApiClient == null) return;
         Location location = null;
         try {
@@ -312,6 +331,57 @@ public class LocationService extends Service {
         } catch (SecurityException e) {
             Log.e(Constants.LOG_TAG_ERROR, "LocationService.stopLocationUpdate: EXCEPTION - " + e.getLocalizedMessage(), e);
         }
+    }
+
+    /**
+     * Check location settings
+     */
+    public void checkLocationSettingsState() {
+        if (mGoogleApiClient == null) return;
+        Log.d(Constants.LOG_TAG_DEBUG, "LocationService.checkLocationSettingsState(): ");
+        LocationServices.SettingsApi.checkLocationSettings(
+                mGoogleApiClient,
+                new LocationSettingsRequest.Builder()
+                        .addLocationRequest(mLocationRequest)
+                        .build()
+        ).setResultCallback(
+                new ResultCallback<LocationSettingsResult>() {
+                    @Override
+                    public void onResult(@NonNull LocationSettingsResult locationSettingsResult) {
+                        Log.d(Constants.LOG_TAG_DEBUG, "LocationSettingsResult.onResult(): ");
+                        LocationSettingsStates states = locationSettingsResult.getLocationSettingsStates();
+                        /*
+                        boolean isGPSOn = states.isGpsUsable();
+                        boolean isNetworkLocationOn = states.isNetworkLocationUsable();
+
+                        /*if (isGPSOn || isNetworkLocationOn) {
+                            callbacks.onLocationON();
+                        } else {
+                            callbacks.onLocationOFF();
+                        }
+                        */
+
+                        LocationSettings settings = new LocationSettings(
+                                states.isGpsUsable(),
+                                states.isNetworkLocationUsable()
+                        );
+
+                        //send result to client
+                        Log.d(Constants.LOG_TAG_DEBUG, "checkLocationSettings.onResult(): isGpsOn - " + settings.isGpsOn() + ", isNetworkLocationOn - " + settings.isNetworkLocationOn());
+                        Message msg = new Message();
+                        msg.obj = settings;
+                        msg.what = HANDLE_MSG_ON_GET_LOCATION_STATE;
+                        mHandler.sendMessage(msg);
+
+                        //getting location if location is turned-on
+                        if (settings.isGpsOn() || settings.isNetworkLocationOn()) {
+                            checkLastKnownLocation();
+                            startLocationUpdate();
+                        }
+                    }
+                }
+        );
+
     }
 
 }

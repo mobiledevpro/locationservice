@@ -14,6 +14,8 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
@@ -48,7 +50,7 @@ public class LocationServiceManager {
     /**
      * Bind service
      */
-    public void bindLocationService(Context context, Callbacks callbacks) {
+    public void bindLocationService(@NonNull Context context, @NonNull Callbacks callbacks) {
         //check network connection
         if (!isDeviceOnline(context)) {
             callbacks.isDeviceOffline();
@@ -77,7 +79,7 @@ public class LocationServiceManager {
     /**
      * Unbind service
      */
-    public void unbindLocationService(Context context) {
+    public void unbindLocationService(@NonNull Context context) {
         if (mLocationServiceConnection != null) {
             context.unbindService(mLocationServiceConnection);
             mLocationServiceConnection = null;
@@ -91,7 +93,7 @@ public class LocationServiceManager {
      * @param apiErrorCode Error code form onConnectionFailed() method
      * @return Dialog
      */
-    public static Dialog getGoogleApiErrorDialog(final Activity activity, int apiErrorCode, int requestCode) {
+    public static Dialog getGoogleApiErrorDialog(@NonNull final Activity activity, int apiErrorCode, int requestCode) {
         return GoogleApiAvailability.getInstance().getErrorDialog(
                 activity,
                 apiErrorCode,
@@ -107,12 +109,22 @@ public class LocationServiceManager {
      * @param requestCode Request code
      * @return Pending intent
      */
-    public static PendingIntent getGoogleApiErrorResolutionPendingIntent(Context context, int errCode, int requestCode) {
+    public static PendingIntent getGoogleApiErrorResolutionPendingIntent(@NonNull Context context, int errCode, int requestCode) {
         return GoogleApiAvailability.getInstance().getErrorResolutionPendingIntent(
                 context,
                 errCode,
                 requestCode
         );
+    }
+
+    /**
+     * Open Location settings
+     *
+     * @param activity Context
+     */
+    public static void openLocationSettings(@NonNull Activity activity) {
+        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        activity.startActivity(intent);
     }
 
     /**
@@ -147,7 +159,7 @@ public class LocationServiceManager {
      * @param context - application context
      * @return true - device online
      */
-    private boolean isDeviceOnline(Context context) {
+    private boolean isDeviceOnline(@NonNull Context context) {
         ConnectivityManager connMngr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = connMngr.getActiveNetworkInfo();
 
@@ -160,7 +172,7 @@ public class LocationServiceManager {
      * @param context Context
      * @return True - permission granted
      */
-    private boolean isLocationPermissionGranted(Context context) {
+    private boolean isLocationPermissionGranted(@NonNull Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return ((ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
                     (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED));
