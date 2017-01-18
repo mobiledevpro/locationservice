@@ -30,24 +30,24 @@ Module for listen user's location changes (runs in background as Service)
                 @Override
                 public void onGoogleApiConnectionFailed(int errCode, String errMessage) {
                     //NOTE: location will not be updated while error will not be resolved
+                    
                     //Options for resolve error:
                     //1. You can get and handle pending intent (example, for customized dialog/screen)
                    PendingIntent pendingIntent = LocationServiceManager.getGoogleApiErrorResolutionPendingIntent(
                                               mView.getActivity(),
                                               errCode,
-                                              /*someRequestCode for sending result to activity*/
+                                              someRequestCode /*for sending result to activity*/
                                       );
 
                    if (pendingIntent != null) {
-                                          try {
-                                              pendingIntent.send();
-                                          } catch (PendingIntent.CanceledException e) {
-                                              //do nothing
-                                          }
-                                      }                   
+                      try {
+                        pendingIntent.send();
+                      } catch (PendingIntent.CanceledException e) {
+                        //do nothing
+                      }
+                   }                   
 
                     //2. Or you can show default predefined dialog:
-                    
                     Dialog dialog = LocationServiceManager.getGoogleApiErrorDialog(
                             activity,
                             errCode,
