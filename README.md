@@ -31,26 +31,23 @@ Module for listen user's location changes (runs in background as Service)
                 public void onGoogleApiConnectionFailed(int errCode, String errMessage) {
                     //NOTE: location will not be updated while error will not be resolved
                     //Options for resolve error:
-                    //    1. Get and handle pending intent
-
-                                     /*
-                                      PendingIntent pendingIntent = LocationServiceManager.getGoogleApiErrorResolutionPendingIntent(
+                    //1. You can get and handle pending intent (example, for customized dialog/screen)
+                   PendingIntent pendingIntent = LocationServiceManager.getGoogleApiErrorResolutionPendingIntent(
                                               mView.getActivity(),
                                               errCode,
-                                              10001
+                                              /*someRequestCode for sending result to activity*/
                                       );
 
-                                      if (pendingIntent != null) {
+                   if (pendingIntent != null) {
                                           try {
                                               pendingIntent.send();
                                           } catch (PendingIntent.CanceledException e) {
                                               //do nothing
                                           }
-                                      }
-                                      */
+                                      }                   
 
-                    // 2. Show predefined error dialog
-                    /*
+                    //2. Or you can show default predefined dialog:
+                    
                     Dialog dialog = LocationServiceManager.getGoogleApiErrorDialog(
                             activity,
                             errCode,
@@ -63,8 +60,7 @@ Module for listen user's location changes (runs in background as Service)
                         }
                     });
                     dialog.show();
-                    */
-
+                   
                 }
 
                 @Override
