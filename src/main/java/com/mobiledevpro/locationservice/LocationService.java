@@ -65,6 +65,7 @@ public class LocationService extends Service {
         public void handleMessage(Message msg) {
             Log.d(Constants.LOG_TAG_DEBUG, "LocationService.handleMessage(): msg.what = " + msg.what);
             int N;
+            Location location;
 
             switch (msg.what) {
                 //when google api connection failed
@@ -90,12 +91,30 @@ public class LocationService extends Service {
                     break;
                 //when last location get
                 case HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION:
+                    if (!(msg.obj instanceof Location)) return;
+
+                    location = (Location) msg.obj;
+                    N = mCallbacks.beginBroadcast();
+                    //send callbacks
+                    for (int i = 0; i < N; i++) {
+                        try {
+                            mCallbacks.getBroadcastItem(i).onGetLastLocation(
+                                    location.getLatitude(),
+                                    location.getLongitude(),
+                                    location.getAltitude(),
+                                    location.getAccuracy()
+                            );
+                        } catch (RemoteException e) {
+                            Log.e(Constants.LOG_TAG_ERROR, "Handler.handleMessage: HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION EXCEPTION - " + e.getLocalizedMessage(), e);
+                        }
+                    }
+                    mCallbacks.finishBroadcast();
                     break;
                 //when location updated
                 case HANDLE_MSG_ON_LOCATION_UPDATED:
                     if (!(msg.obj instanceof Location)) return;
 
-                    Location location = (Location) msg.obj;
+                    location = (Location) msg.obj;
                     N = mCallbacks.beginBroadcast();
                     //send callbacks
                     for (int i = 0; i < N; i++) {
@@ -184,6 +203,7 @@ public class LocationService extends Service {
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected(@Nullable Bundle bundle) {
+                        setLastKnownLocation();
                         startLocationUpdate();
                     }
 
@@ -218,6 +238,12 @@ public class LocationService extends Service {
         }
     }
 
+    /**
+     * Handle Google API error
+     *
+     * @param context          Context
+     * @param connectionResult ConnectionResult
+     */
     private void onGapiFailedConnection(Context context, ConnectionResult connectionResult) {
         if (connectionResult == null) return;
         //get detailed error message
@@ -232,6 +258,27 @@ public class LocationService extends Service {
         Message msg = new Message();
         msg.obj = error;
         msg.what = HANDLE_MSG_ON_GAPI_CONNECTION_FAILED;
+        mHandler.sendMessage(msg);
+    }
+
+    /**
+     * Return to client last location
+     */
+    private void setLastKnownLocation() {
+        if (mGoogleApiClient == null) return;
+        Location location = null;
+        try {
+            location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        } catch (SecurityException e) {
+            //do nothing
+        }
+
+        if (location == null) return;
+
+        Log.d(Constants.LOG_TAG_DEBUG, "LocationListener.setLastKnownLocation(): lat - " + location.getLatitude() + ", lon - " + location.getLongitude());
+        Message msg = new Message();
+        msg.obj = location;
+        msg.what = HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION;
         mHandler.sendMessage(msg);
     }
 

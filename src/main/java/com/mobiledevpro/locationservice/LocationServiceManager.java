@@ -194,9 +194,7 @@ public class LocationServiceManager {
         public abstract void onGetLocationSettingsState(boolean isNetworkLocationOn, boolean isGpsLocationOn);
 
         @Override
-        public void onGetLastLocation(double latitude, double longitude, double altitude, float accuracy) throws RemoteException {
-
-        }
+        public abstract void onGetLastLocation(double latitude, double longitude, double altitude, float accuracy);
     }
 
 }
