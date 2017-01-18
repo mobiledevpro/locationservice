@@ -1,11 +1,17 @@
 package com.mobiledevpro.locationservice;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 /**
@@ -38,6 +44,18 @@ public class LocationServiceManager {
      * Bind service
      */
     public void bindLocationService(Context context, Callbacks callbacks) {
+        //check network connection
+        if (!isDeviceOnline(context)) {
+            callbacks.isDeviceOffline();
+            return;
+        }
+
+        //check location permission
+        if (!isLocationPermissionGranted(context)) {
+            callbacks.isNotLocationPermissionGranted();
+            return;
+        }
+
         Intent intent = new Intent(context, LocationService.class);
         //unbind service if it was already bound
         unbindLocationService(context);
@@ -89,11 +107,61 @@ public class LocationServiceManager {
     }
 
     /**
+     * Check network connection
+     *
+     * @param context - application context
+     * @return true - device online
+     */
+    private boolean isDeviceOnline(Context context) {
+        ConnectivityManager connMngr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = connMngr.getActiveNetworkInfo();
+
+        return (netInfo != null && netInfo.isConnected());
+    }
+
+    /**
+     * Check Location permission
+     *
+     * @param context Context
+     * @return True - permission granted
+     */
+    private boolean isLocationPermissionGranted(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return ((ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
+                    (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED));
+        } else {
+            return true;
+        }
+    }
+
+    /**
      * Callbacks for client
      */
     public static abstract class Callbacks extends ILocationServiceCallbacks.Stub {
+
         @Override
-        public abstract void onLocationUpdated(double lat, double lon);
+        public abstract void isDeviceOffline();
+
+        @Override
+        public abstract void isNotLocationPermissionGranted();
+
+        @Override
+        public abstract void onGoogleApiConnectionFailed(int errCode, String errMessage, boolean hasResolution);
+
+        @Override
+        public abstract void onLocationUpdated(
+                double latitude,
+                double longitude,
+                double altitude,
+                float accuracy);
+
+        @Override
+        public abstract void onGetLocationSettingsState(boolean isNetworkLocationOn, boolean isGpsLocationOn);
+
+        @Override
+        public void onGetLastLocation(double latitude, double longitude, double altitude, float accuracy) throws RemoteException {
+
+        }
     }
 
 }

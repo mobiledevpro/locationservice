@@ -32,7 +32,10 @@ import com.google.android.gms.location.LocationServices;
 
 public class LocationService extends Service {
 
-    private static final int HANDLE_MSG_LOCATION_UPDATED = 1;
+    private static final int HANDLE_MSG_ON_GAPI_CONNECTION_FAILED = 1;
+    private static final int HANDLE_MSG_ON_GET_LOCATION_STATE = 2;
+    private static final int HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION = 3;
+    private static final int HANDLE_MSG_ON_LOCATION_UPDATED = 4;
 
     private final RemoteCallbackList<ILocationServiceCallbacks> mCallbacks = new RemoteCallbackList<>();
     private final ILocationService.Stub mBinder = new ILocationService.Stub() {
@@ -59,19 +62,29 @@ public class LocationService extends Service {
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
+            Log.d(Constants.LOG_TAG_DEBUG, "LocationService.handleMessage(): msg.what = " + msg.what);
+            int N;
+
             switch (msg.what) {
-                case HANDLE_MSG_LOCATION_UPDATED:
+                case HANDLE_MSG_ON_GAPI_CONNECTION_FAILED:
+                    break;
+                case HANDLE_MSG_ON_GET_LOCATION_STATE:
+                    break;
+                case HANDLE_MSG_ON_GET_LAST_KNOWN_LOCATION:
+                    break;
+                case HANDLE_MSG_ON_LOCATION_UPDATED:
                     if (!(msg.obj instanceof Location)) return;
 
                     Location location = (Location) msg.obj;
-                    Log.d(Constants.LOG_TAG_DEBUG, "LocationService.handleMessage(): HANDLE_MSG_LOCATION_UPDATED");
+                    N = mCallbacks.beginBroadcast();
                     //send callbacks
-                    final int N = mCallbacks.beginBroadcast();
                     for (int i = 0; i < N; i++) {
                         try {
                             mCallbacks.getBroadcastItem(i).onLocationUpdated(
                                     location.getLatitude(),
-                                    location.getLongitude()
+                                    location.getLongitude(),
+                                    location.getAltitude(),
+                                    location.getAccuracy()
                             );
                         } catch (RemoteException e) {
                             Log.e(Constants.LOG_TAG_ERROR, "LocationService.onCreate: EXCEPTION - " + e.getLocalizedMessage(), e);
@@ -104,7 +117,7 @@ public class LocationService extends Service {
             Log.d(Constants.LOG_TAG_DEBUG, "LocationListener.onLocationChanged(): lat - " + location.getLatitude() + ", lon - " + location.getLongitude());
             Message msg = new Message();
             msg.obj = location;
-            msg.what = HANDLE_MSG_LOCATION_UPDATED;
+            msg.what = HANDLE_MSG_ON_LOCATION_UPDATED;
             mHandler.sendMessage(msg);
         }
     };
