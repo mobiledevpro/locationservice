@@ -16,6 +16,8 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
@@ -125,6 +127,31 @@ public class LocationServiceManager {
     public static void openLocationSettings(@NonNull Activity activity) {
         Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
         activity.startActivity(intent);
+    }
+
+    /**
+     * Request Location permission
+     *
+     * @param activity    Activity
+     * @param requestCode Request code
+     */
+    public static void requestLocationPermission(Activity activity, int requestCode) {
+        ActivityCompat.requestPermissions(
+                activity,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                requestCode);
+    }
+
+    /**
+     * Request Location permission
+     *
+     * @param fragment    Fragment
+     * @param requestCode Request code
+     */
+    public static void requestLocationPermission(Fragment fragment, int requestCode) {
+        fragment.requestPermissions(
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                requestCode);
     }
 
     /**

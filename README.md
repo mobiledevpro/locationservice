@@ -9,6 +9,11 @@ Module for listen user's location changes (runs in background as Service)
             new LocationServiceManager.Callbacks() {
 
                 @Override
+                public void onLocationUpdated(double latitude, double longitude, double altitude, float accuracy) {
+                    //use location data
+                }
+
+                @Override
                 public void isDeviceOffline() {
                     //show message, go to settings, etc
                     //NOTE: location will not be updated while device is offline
@@ -18,6 +23,10 @@ Module for listen user's location changes (runs in background as Service)
                 public void isNotLocationPermissionGranted() {
                     //Need to ask user a runtime permision for location
                     //NOTE: location will not be updated while permission isn't granted
+                    //You can ask permission using this:
+                    LocationServiceManager.requestLocationPermission(
+                        activityOrFragment,
+                        requestCode /*will be returned to Activity.onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)*/);
                 }
 
                 @Override
@@ -63,10 +72,7 @@ Module for listen user's location changes (runs in background as Service)
                    
                 }
 
-                @Override
-                public void onLocationUpdated(double latitude, double longitude, double altitude, float accuracy) {
-                    //use new location data
-                }
+
             };
 ```
 
